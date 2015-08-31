@@ -67,7 +67,7 @@ namespace RtmpSharp.Net
             this.uri = uri;
             this.context = context;
             this.appName = uri.AbsolutePath.Split('/').Skip(1).Reverse().Skip(1).Reverse().JoinStrings("/");
-            this.streamName = uri.AbsolutePath.Split('/').Last();
+            this.streamName = uri.PathAndQuery.Split('/').Last();
                 
             this.callbackManager = new TaskCallbackManager<int, object>();
         }
@@ -280,6 +280,9 @@ namespace RtmpSharp.Net
                         case "onstatus":
                             System.Diagnostics.Debug.Print("Received status.");
                             break;
+                        case "onStatus":
+                            System.Diagnostics.Debug.Print("Received status.");
+                            break;
 
                         default:
 #if DEBUG
@@ -390,7 +393,7 @@ namespace RtmpSharp.Net
         {
             var connect = new InvokeAmf0
             {
-                MethodCall = new Method("play", new object[]{ streamName, -2, -1 } ),
+                MethodCall = new Method("play", new object[]{ streamName, -2, -1, false } ),
 //                ConnectionParameters = new AsObject
 //                {
 //                    { "pageUrl",           pageUrl                },
@@ -405,9 +408,10 @@ namespace RtmpSharp.Net
 //                    { "tcUrl",             tcUrl                  },
 //                    { "app",               appName                }
 //                },
+
                 InvokeId = GetNextInvokeId()
             };
-            return (AsObject)await QueueCommandAsTask(connect, 3, 0, requireConnected: false);
+            return (AsObject)await QueueCommandAsTask(connect, 3/*8*/ /*3*/, 0, requireConnected: false);
         }
 
         public async Task<bool> SubscribeAsync(string endpoint, string destination, string subtopic, string clientId)

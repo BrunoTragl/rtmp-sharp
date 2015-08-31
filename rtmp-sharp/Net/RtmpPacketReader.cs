@@ -263,8 +263,15 @@ namespace RtmpSharp.Net
         {
             var methodName = (string)r.ReadAmf0Item();
 
-            command.InvokeId = Convert.ToInt32(r.ReadAmf0Item());
-            command.ConnectionParameters = r.ReadAmf0Item();
+            var tmp = r.ReadAmf0Item();
+            if (tmp is AsObject) {
+                command.ConnectionParameters = tmp;
+//                tmp = r.ReadAmf0Item();
+            }
+            else {
+                command.InvokeId = Convert.ToInt32(tmp);
+                command.ConnectionParameters = r.ReadAmf0Item();
+            }
 
             var parameters = new List<object>();
             while (r.DataAvailable)
