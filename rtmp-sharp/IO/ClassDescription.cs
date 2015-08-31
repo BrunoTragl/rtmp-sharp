@@ -4,11 +4,11 @@ namespace RtmpSharp.IO
 {
     class ClassDescription
     {
-        public string Name { get; }
-        public IMemberWrapper[] Members { get; }
-        public bool IsExternalizable { get; }
-        public bool IsDynamic { get; }
-        public bool IsTyped => !string.IsNullOrEmpty(Name);
+        public string Name { get; private set; }
+        public IMemberWrapper[] Members { get; private set; }
+        public bool IsExternalizable { get; private set; }
+        public bool IsDynamic { get; private set; }
+        public bool IsTyped { get { return !string.IsNullOrEmpty(Name); } }
 
         public virtual bool TryGetMember(string name, out IMemberWrapper member) { throw new NotImplementedException(); }
 

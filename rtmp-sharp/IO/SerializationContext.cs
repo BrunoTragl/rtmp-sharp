@@ -42,32 +42,37 @@ namespace RtmpSharp.IO
         public void Register(Type type) { serializerObjectFactory.Register(type); }
         public void RegisterAlias(Type type, string alias, bool canonical) { serializerObjectFactory.RegisterAlias(type, alias, canonical); }
 
-        internal string GetAlias(string typeName) => serializerObjectFactory.GetAlias(typeName);
+        internal string GetAlias(string typeName) { return serializerObjectFactory.GetAlias(typeName); }
 
-        internal bool CanCreate(string typeName) => serializerObjectFactory.CanCreate(typeName);
-        internal bool CanCreate(Type type) => serializerObjectFactory.CanCreate(type);
+        internal bool CanCreate(string typeName) { return serializerObjectFactory.CanCreate(typeName); }
+        internal bool CanCreate(Type type) { return  serializerObjectFactory.CanCreate(type); }
 
-        internal object Create(string typeName) => serializerObjectFactory.Create(typeName);
-        internal object Create(Type type) => serializerObjectFactory.Create(type);
+        internal object Create(string typeName) { return serializerObjectFactory.Create(typeName); }
+        internal object Create(Type type) { return serializerObjectFactory.Create(type); }
 
 
-        internal ClassDescription GetClassDescription(object obj) => objectWrapperFactory.GetClassDescription(obj);
-        internal ClassDescription GetClassDescription(Type type, object obj) => objectWrapperFactory.GetClassDescription(type, obj);
+        internal ClassDescription GetClassDescription(object obj) { return objectWrapperFactory.GetClassDescription(obj); }
+        internal ClassDescription GetClassDescription(Type type, object obj) { return objectWrapperFactory.GetClassDescription(type, obj); }
 
 
         internal DeserializationStrategy GetDeserializationStrategy(string typeName)
-            => CanCreate(typeName)
+        {
+            return CanCreate(typeName)
                 ? DeserializationStrategy.TypedObject
                 : GetFallbackDeserializationStrategy();
+        }
 
         internal DeserializationStrategy GetDeserializationStrategy(Type type)
-            => CanCreate(type)
+        {
+            return CanCreate(type)
                 ? DeserializationStrategy.TypedObject
                 : GetFallbackDeserializationStrategy();
-
+        }
         DeserializationStrategy GetFallbackDeserializationStrategy()
-             => fallbackStrategy == FallbackStrategy.DynamicObject
+        {
+            return fallbackStrategy == FallbackStrategy.DynamicObject
                 ? DeserializationStrategy.DynamicObject
                 : DeserializationStrategy.Exception;
+        }
     }
 }

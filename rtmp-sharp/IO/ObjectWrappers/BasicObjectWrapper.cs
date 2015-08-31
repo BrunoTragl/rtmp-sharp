@@ -13,8 +13,10 @@ namespace RtmpSharp.IO.ObjectWrappers
 
         readonly SerializationContext context;
 
-        public bool GetIsExternalizable(object instance) => instance is IExternalizable;
-        public bool GetIsDynamic(object instance) => instance is AsObject;
+        public bool GetIsExternalizable(object instance) { return instance is IExternalizable;}
+        public bool GetIsDynamic(object instance) {
+            return instance is AsObject;
+        }
 
         public BasicObjectWrapper(SerializationContext context)
         {
@@ -25,7 +27,7 @@ namespace RtmpSharp.IO.ObjectWrappers
         public virtual ClassDescription GetClassDescription(object obj)
         {
             if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+                throw new ArgumentNullException("obj");
 
             var type = obj.GetType();
 
@@ -78,7 +80,7 @@ namespace RtmpSharp.IO.ObjectWrappers
         class BasicObjectClassDescription : ClassDescription
         {
             // Because we are cached by the `BasicObjectWrapper`, speed up lookups so that read deserialisation is (slightly) faster.
-            Dictionary<string, IMemberWrapper> MemberLookup { get; }
+            Dictionary<string, IMemberWrapper> MemberLookup { get; set; }
 
             internal BasicObjectClassDescription(string name, IMemberWrapper[] members, bool externalizable, bool dynamic)
                 : base(name, members, externalizable, dynamic)
@@ -101,8 +103,8 @@ namespace RtmpSharp.IO.ObjectWrappers
             PropertyInfo propertyInfo;
             FieldInfo fieldInfo;
 
-            public string Name { get; }
-            public string SerializedName { get; }
+            public string Name { get; private set; }
+            public string SerializedName { get; private set; }
 
             public BasicMemberWrapper(PropertyInfo propertyInfo)
             {
@@ -110,7 +112,7 @@ namespace RtmpSharp.IO.ObjectWrappers
                 this.isField = false;
 
                 this.Name = propertyInfo.Name;
-                this.SerializedName = propertyInfo.GetCustomAttribute<SerializedNameAttribute>(true)?.SerializedName ?? Name;
+                this.SerializedName = propertyInfo.GetCustomAttribute<SerializedNameAttribute>(true).ToMonad().Get(it => it.SerializedName).Result() ?? Name;
             }
 
             public BasicMemberWrapper(FieldInfo fieldInfo)
@@ -119,7 +121,7 @@ namespace RtmpSharp.IO.ObjectWrappers
                 this.isField = true;
 
                 this.Name = fieldInfo.Name;
-                this.SerializedName = fieldInfo.GetCustomAttribute<SerializedNameAttribute>(true)?.SerializedName ?? Name;
+                this.SerializedName = fieldInfo.GetCustomAttribute<SerializedNameAttribute>(true).ToMonad().Get(it => it.SerializedName).Result() ?? Name;
             }
 
             public object GetValue(object instance)

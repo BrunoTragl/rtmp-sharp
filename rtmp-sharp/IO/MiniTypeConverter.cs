@@ -176,7 +176,11 @@ namespace RtmpSharp.IO
 
     static class Reflection
     {
-        public static bool IsConvertible(this Type type) => typeof(IConvertible).IsAssignableFrom(type);
-        public static bool IsNullable(this Type type) => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+        public static bool IsConvertible(this Type type) {
+            return typeof(IConvertible).IsAssignableFrom(type);
+        }
+        public static bool IsNullable(this Type type) {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+        }
     }
 }

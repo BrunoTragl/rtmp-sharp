@@ -10,8 +10,8 @@ namespace RtmpSharp.Messaging.Events
             Dynamic = 2
         }
 
-        public int AcknowledgementWindowSize { get; }
-        public BandwithLimitType LimitType { get; }
+        public int AcknowledgementWindowSize { get; private set; }
+        public BandwithLimitType LimitType { get; private set; }
 
         private PeerBandwidth() : base(Net.MessageType.SetPeerBandwith) { }
 

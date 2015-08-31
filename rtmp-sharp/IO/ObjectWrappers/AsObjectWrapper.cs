@@ -49,8 +49,9 @@ namespace RtmpSharp.IO.ObjectWrappers
 
         class AsObjectMemberWrapper : IMemberWrapper
         {
-            public string Name { get; }
-            public string SerializedName => Name;
+            public string Name { get; private set; }
+
+            public string SerializedName { get { return Name; } }
 
             public AsObjectMemberWrapper(string name)
             {

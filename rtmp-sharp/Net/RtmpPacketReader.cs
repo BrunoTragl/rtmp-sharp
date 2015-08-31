@@ -56,6 +56,7 @@ namespace RtmpSharp.Net
             {
                 while (Continue)
                 {
+                    AKUtils.Trace("ReadLoop() +++++++");
                     var header = ReadHeader();
                     rtmpHeaders[header.StreamId] = header;
 

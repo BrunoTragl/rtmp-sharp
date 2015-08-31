@@ -26,8 +26,10 @@ namespace RtmpSharp.Messaging
         public InvocationException()
         {
         }
-
-        public override string Message => FaultString;
-        public override string StackTrace => FaultDetail;
+// AK
+//        private string _message = FaultString;
+//        public override string Message { get { return _message; } private set { _message = value;}}
+//        public string _stackTrace = FaultDetail;
+//        public override string StackTrace { get { return _stackTrace; } private set { _stackTrace = value; } }
     }
 }

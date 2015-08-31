@@ -6,8 +6,8 @@ namespace RtmpSharp.IO.ObjectWrappers
     {
         readonly SerializationContext context;
 
-        public bool GetIsDynamic(object instance) => false;
-        public bool GetIsExternalizable(object instance) => false;
+        public bool GetIsDynamic(object instance) { return false;}
+        public bool GetIsExternalizable(object instance) { return false;}
 
         public ExternalizableWrapper(SerializationContext context)
         {

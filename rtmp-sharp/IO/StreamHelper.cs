@@ -9,7 +9,7 @@ namespace RtmpSharp.IO
         public static byte[] ReadBytes(Stream stream, int count)
         {
             if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
+                throw new ArgumentNullException("stream");
 
             var result = new byte[count];
             var bytesRead = 0;
@@ -31,7 +31,7 @@ namespace RtmpSharp.IO
         public static async Task<byte[]> ReadBytesAsync(Stream stream, int count)
         {
             if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
+                throw new ArgumentNullException("stream");
 
             var result = new byte[count];
             var bytesRead = 0;

@@ -23,7 +23,7 @@ namespace RtmpSharp.Net
         public event EventHandler<MessageReceivedEventArgs> MessageReceived;
         public event EventHandler<Exception> CallbackException;
 
-        public bool IsDisconnected => !hasConnected || disconnectsFired != 0;
+        public bool IsDisconnected { get { return !hasConnected || disconnectsFired != 0; } }
 
         public string ClientId;
 
@@ -49,16 +49,26 @@ namespace RtmpSharp.Net
 
         volatile int disconnectsFired;
 
+        readonly string appName;
+        readonly string streamName;
+
         public RtmpClient(Uri uri, SerializationContext context)
         {
-            if (uri == null) throw new ArgumentNullException(nameof(uri));
-            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (uri == null) throw new ArgumentNullException("uri");
+            if (context == null) throw new ArgumentNullException("context");
 
             var scheme = uri.Scheme.ToLowerInvariant();
             if (scheme != "rtmp" && scheme != "rtmps") throw new ArgumentException("only rtmp:// and rtmps:// schemes are supported");
 
+            if (uri.Port == -1) {
+                uri = new Uri(uri.Scheme + "://" + uri.Host + ":1935" + uri.PathAndQuery);
+            }
+
             this.uri = uri;
             this.context = context;
+            this.appName = uri.AbsolutePath.Split('/').Skip(1).Reverse().Skip(1).Reverse().JoinStrings("/");
+            this.streamName = uri.AbsolutePath.Split('/').Last();
+                
             this.callbackManager = new TaskCallbackManager<int, object>();
         }
 
@@ -71,7 +81,7 @@ namespace RtmpSharp.Net
             : this(uri, serializationContext, objectEncoding)
         {
             if (validator == null)
-                throw new ArgumentNullException(nameof(validator));
+                throw new ArgumentNullException("validator");
 
             this.validator = validator;
         }
@@ -94,7 +104,7 @@ namespace RtmpSharp.Net
             try { writerThread.Abort(); } catch { }
             try { readerThread.Abort(); } catch { }
 
-            WrapCallback(() => Disconnected?.Invoke(this, e));
+            WrapCallback(() => Disconnected.ToMonad().Do(it => it.Invoke(this, e)));
             WrapCallback(() => callbackManager.SetExceptionForAll(new ClientDisconnectedException(e.Description, e.Exception)));
         }
 
@@ -151,7 +161,9 @@ namespace RtmpSharp.Net
             // handshake check
             if (!c01.Random.SequenceEqual(s2.Random) || c01.Time != s2.Time)
                 throw new ProtocolViolationException();
-            
+
+            AKUtils.Trace("+++++++++++++++++++++ HANDSHAKE COMPLETE +++++++++++++++++++++++++");
+
             writer = new RtmpPacketWriter(new AmfWriter(stream, context), ObjectEncoding.Amf3);
             reader = new RtmpPacketReader(new AmfReader(stream, context));
             reader.EventReceived += EventReceivedCallback;
@@ -171,6 +183,7 @@ namespace RtmpSharp.Net
                 ClientId = cId as string;
 
             hasConnected = true;
+            AKUtils.Trace("++++++++++++++++++++++++ CONNECT COMPLETE ++++++++++++++++++++++++++");
         }
 
         public void Close()
@@ -355,8 +368,43 @@ namespace RtmpSharp.Net
                     { "fpad",              false                  },
                     { "videoCodecs",       252                    },
                     { "tcUrl",             tcUrl                  },
-                    { "app",               null                   }
+                    { "app",               appName                }
                 },
+                InvokeId = GetNextInvokeId()
+            };
+            return (AsObject)await QueueCommandAsTask(connect, 3, 0, requireConnected: false);
+        }
+
+        public async Task<double> CreateStreamInvokeAsync()
+        {
+            var connect = new InvokeAmf0
+            {
+                MethodCall = new Method("createStream", new object[]{ }),
+                InvokeId = GetNextInvokeId()
+            };
+            return (double)await QueueCommandAsTask(connect, 3, 0, requireConnected: false);
+//            return await InvokeAsync<AsObject>("")
+        }
+
+        public async Task<AsObject> PlayInvokeAsync()
+        {
+            var connect = new InvokeAmf0
+            {
+                MethodCall = new Method("play", new object[]{ streamName, -2, -1 } ),
+//                ConnectionParameters = new AsObject
+//                {
+//                    { "pageUrl",           pageUrl                },
+//                    { "objectEncoding",    (double)objectEncoding },
+//                    { "capabilities",      15                     },
+//                    { "audioCodecs",       1639                   },
+//                    { "flashVer",          "WIN 9,0,115,0"        },
+//                    { "swfUrl",            swfUrl                 },
+//                    { "videoFunction",     1                      },
+//                    { "fpad",              false                  },
+//                    { "videoCodecs",       252                    },
+//                    { "tcUrl",             tcUrl                  },
+//                    { "app",               appName                }
+//                },
                 InvokeId = GetNextInvokeId()
             };
             return (AsObject)await QueueCommandAsTask(connect, 3, 0, requireConnected: false);
@@ -407,7 +455,7 @@ namespace RtmpSharp.Net
                 ClientId = ClientId,
                 Destination = string.Empty, // destination must not be null to work on some servers
                 Operation = CommandOperation.Login,
-                Body = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}")),
+                Body = Convert.ToBase64String(Encoding.UTF8.GetBytes(username + ":" + password)),
             };
 
             return await InvokeAsync<string>(null, message) == "success";
@@ -461,7 +509,8 @@ namespace RtmpSharp.Net
                 }
                 catch (Exception ex)
                 {
-                    CallbackException?.Invoke(this, ex);
+                    if (CallbackException != null)
+                        CallbackException.Invoke(this, ex);
                 }
             }
 #if DEBUG && BREAK_ON_EXCEPTED_CALLBACK

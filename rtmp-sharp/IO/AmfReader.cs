@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Xml.Linq;
+using System.Threading;
 
 namespace RtmpSharp.IO
 {
@@ -29,7 +30,17 @@ namespace RtmpSharp.IO
             public string[] MemberNames;
             public bool IsExternalizable;
             public bool IsDynamic;
-            public bool IsTyped => !string.IsNullOrEmpty(TypeName);
+            private bool ?_isTyped;
+            public bool IsTyped
+            {
+                get
+                {
+                    if (!_isTyped.HasValue)
+                        _isTyped = !string.IsNullOrEmpty(TypeName);
+                    return _isTyped.Value;
+                }
+                set { _isTyped = value; }
+            }
         }
 
         static readonly List<Func<AmfReader, object>> Amf0TypeReaders = new List<Func<AmfReader, object>>
@@ -91,14 +102,15 @@ namespace RtmpSharp.IO
 
         public void Dispose()
         {
-            underlying?.Dispose();
+            if (underlying != null)
+                underlying.Dispose();
         }
 
         # region helpers
 
-        public long Length => underlying.BaseStream.Length;
-        public long Position => underlying.BaseStream.Position;
-        public bool DataAvailable => Position < Length;
+        public long Length { get { return underlying.BaseStream.Length; } }
+        public long Position { get { return underlying.BaseStream.Position; } }
+        public bool DataAvailable { get { return Position < Length; } }
 
         public void Reset()
         {
@@ -115,12 +127,16 @@ namespace RtmpSharp.IO
 
         public byte ReadByte()
         {
-            return underlying.ReadByte();
+            var ret = underlying.ReadByte();
+            AKUtils.Trace(ret.ToString("x2"));
+            return ret;
         }
 
         public byte[] ReadBytes(int count)
         {
-            return underlying.ReadBytes(count);
+            var ret = underlying.ReadBytes(count);
+            AKUtils.Trace("size:" + ret.Length, ret.ToUtfString(), ret.ToHexString());
+            return ret;
         }
 
         public ushort ReadUInt16()
@@ -137,7 +153,9 @@ namespace RtmpSharp.IO
 
         public bool ReadBoolean()
         {
-            return underlying.ReadBoolean();
+            var ret = underlying.ReadBoolean();
+            AKUtils.Trace(ret);
+            return ret;
         }
 
         public int ReadInt32()
@@ -283,7 +301,7 @@ namespace RtmpSharp.IO
 
                 default:
                 case DeserializationStrategy.Exception:
-                    throw new SerializationException($"can't deserialize a `{typeName}`");
+                    throw new SerializationException("can't deserialize a `" + typeName + "`");
             }
         }
 
@@ -613,7 +631,7 @@ namespace RtmpSharp.IO
 
             var strategy = SerializationContext.GetDeserializationStrategy(klass.TypeName);
             if (strategy == DeserializationStrategy.Exception)
-                throw new SerializationException($"can't deserialize a `{klass.TypeName}`");
+                throw new SerializationException("can't deserialize a `" + klass.TypeName + "`");
 
             var instance = klass.IsTyped && strategy == DeserializationStrategy.TypedObject
                 ? SerializationContext.Create(klass.TypeName)
@@ -624,7 +642,7 @@ namespace RtmpSharp.IO
             {
                 var externalizable = instance as IExternalizable;
                 if (externalizable == null)
-                    throw new SerializationException($"{klass.TypeName} does not implement IExternalizable");
+                    throw new SerializationException("`" + klass.TypeName + "` does not implement IExternalizable");
 
                 externalizable.ReadExternal(new DataInput(this));
             }

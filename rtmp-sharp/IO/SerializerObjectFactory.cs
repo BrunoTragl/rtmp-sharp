@@ -28,8 +28,12 @@ namespace RtmpSharp.IO
 
 
 
-        public object Create(Type type) => constructors[type](new object[0]);
-        public object Create(string typeName) => Create(remoteToLocalNames[typeName]);
+        public object Create(Type type) {
+            return constructors[type](new object[0]);
+        }
+        public object Create(string typeName) {
+            return Create(remoteToLocalNames[typeName]);
+        }
 
 
         // add the type to the list of creatable types
@@ -40,7 +44,7 @@ namespace RtmpSharp.IO
 
             var constructor = type.GetConstructors().FirstOrDefault(x => x.GetParameters().Length == 0);
             if (constructor == null)
-                throw new ArgumentException($"{type.FullName} does not have any accessible parameterless constructors.", nameof(type));
+                throw new ArgumentException(""+type.FullName+" does not have any accessible parameterless constructors.", "type");
 
             constructors[type] = MethodFactory.CompileObjectConstructor(constructor);
 
@@ -57,8 +61,8 @@ namespace RtmpSharp.IO
             else
             {
                 throw new ArgumentException(
-                    $"{type.FullName} has {attributes.Count(x => x.Canonical)} candidate names marked as canonical. only one can be canonical.",
-                    nameof(type));
+                    ""+type.FullName+" has "+attributes.Count(x => x.Canonical)+" candidate names marked as canonical. only one can be canonical.",
+                    "type");
             }
         }
 
